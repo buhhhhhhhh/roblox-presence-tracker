@@ -4,6 +4,8 @@ const {
     MessageFlags
 } = require("discord.js");
 
+const express = require("express");
+
 // ==============================
 // CONFIG
 // ==============================
@@ -18,7 +20,11 @@ const TOWN_PLACE_ID = "4991214437";
 
 const CHECK_INTERVAL = 10000; // 10 seconds
 
-let lastBotMessage = null;
+let lastPCStatus = null;
+
+function isPCOnline() {
+    return Date.now() - lastPCHeartbeat < PC_OFFLINE_TIMEOUT;
+}
 // ==============================
 // DISCORD CLIENT
 // ==============================
@@ -28,6 +34,33 @@ const client = new Client({
 });
 
 
+// ==============================
+// PC HEARTBEAT
+// ==============================
+
+const app = express();
+
+app.use(express.json());
+
+let lastPCHeartbeat = 0;
+
+const PC_OFFLINE_TIMEOUT = 30000; // 30 seconds
+
+app.post("/heartbeat", (req, res) => {
+    lastPCHeartbeat = Date.now();
+
+    console.log("PC heartbeat received.");
+
+    res.send("OK");
+});
+
+app.get("/", (req, res) => {
+    res.send("Roblox Tracker is running.");
+});
+
+app.listen(process.env.PORT || 3000, () => {
+    console.log("Heartbeat server is running.");
+});
 // ==============================
 // TRACKING
 // ==============================
@@ -247,87 +280,59 @@ lastBotMessage = await channel.send({
         }
 
 
-        // =========================================================
-        // OFFLINE
-        // =========================================================
+    // =========================================================
+// OFFLINE / PC STATUS
+// =========================================================
 
-      else if (currentStatus === "offline") {
+else if (currentStatus === "offline") {
 
-    // Don't immediately announce offline.
-    // Roblox can briefly report offline while switching servers.
+    const pcOnline = isPCOnline();
 
-    if (lastStatus !== "offline") {
+    const newStatus = pcOnline
+        ? "pc_online"
+        : "pc_offline";
 
-        console.log("Temporarily offline — waiting before announcing.");
+    if (lastPCStatus !== newStatus) {
 
-        setTimeout(async () => {
-
+        if (lastBotMessage) {
             try {
-                const response = await fetch(
-                    "https://presence.roblox.com/v1/presence/users",
-                    {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                            userIds: [ROBLOX_USER_ID]
-                        })
-                    }
-                );
-
-                const data = await response.json();
-                const presence = data.userPresences?.[0];
-
-                const isPlaying =
-                    presence &&
-                    presence.userPresenceType === 2;
-
-                if (!isPlaying) {
-
-                    const channel =
-                        await client.channels.fetch(CHANNEL_ID);
-
-             if (lastBotMessage) {
-    try {
-        await lastBotMessage.delete();
-    } catch (error) {
-        console.log("Previous message could not be deleted.");
-    }
-}
-
-lastBotMessage = await channel.send({
-    content:
-        "🔴 **The founder is not playing Roblox.**",
-
-    flags: MessageFlags.SuppressNotifications
-});
-
-                    lastStatus = "offline";
-                    lastGameId = null;
-
-                    console.log(
-                        "Player is confirmed offline."
-                    );
-                }
-
-                else {
-                    console.log(
-                        "Player is back in Roblox — ignoring temporary offline state."
-                    );
-                }
-
+                await lastBotMessage.delete();
             } catch (error) {
-                console.error(
-                    "Offline verification error:",
-                    error
-                );
+                console.log("Previous message could not be deleted.");
             }
+        }
 
-        }, 15000); // Wait 15 seconds
+        let messageText;
+
+        if (pcOnline) {
+
+            messageText =
+                "🔴 **The founder is offline.**";
+
+        } else {
+
+            messageText =
+                "⚫ **The founder is away from their computer.**";
+
+        }
+
+        lastBotMessage = await channel.send({
+            content: messageText,
+            flags: MessageFlags.SuppressNotifications
+        });
+
+        console.log(
+            pcOnline
+                ? "PC is ON — founder is offline."
+                : "PC is OFF — founder is away from their computer."
+        );
+
+        lastPCStatus = newStatus;
     }
-}
 
+    lastStatus = "offline";
+    lastGameId = null;
+}
 
         // ==============================
         // SAVE CURRENT STATE
