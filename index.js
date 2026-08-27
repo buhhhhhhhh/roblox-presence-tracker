@@ -7,7 +7,7 @@ const {
 const express = require("express");
 
 // ==============================
-// CONFIG
+// CONFIGg
 // ==============================
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
