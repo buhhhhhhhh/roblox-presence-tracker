@@ -8,7 +8,7 @@ const {
 // CONFIG
 // ==============================
 
-const DISCORD_TOKEN = "MTU0MTQ2NDQ0ODcwMTgzMzI3Ng.GXFnMR._EsDOKmo1zfLbLpaD2kz0VuDH5WEHu9BxAYCM0";
+const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 
 const CHANNEL_ID = "1541467267177652377";
 
