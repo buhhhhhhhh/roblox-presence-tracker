@@ -204,8 +204,8 @@ async function checkRobloxPresence() {
 
     if (gameId) {
 
-        const joinLink =
-            `https://www.roblox.com/games/start?placeId=${TOWN_PLACE_ID}&gameInstanceId=${gameId}`;
+       const joinLink =
+    `https://www.roblox.com/games/start?placeId=${TOWN_PLACE_ID}&gameInstanceId=${gameId}`;
 
         let messageText;
 
@@ -281,7 +281,7 @@ lastBotMessage = await channel.send({
         }
 
 
-    // =========================================================
+  // =========================================================
 // OFFLINE / PC STATUS
 // =========================================================
 
@@ -293,8 +293,10 @@ else if (currentStatus === "offline") {
         ? "pc_online"
         : "pc_offline";
 
-    if (lastPCStatus !== newStatus) {
+    // Detect change in offline/PC state
+    if (lastPCStatus !== newStatus || lastStatus !== "offline") {
 
+        // Delete previous bot message
         if (lastBotMessage) {
             try {
                 await lastBotMessage.delete();
@@ -314,9 +316,9 @@ else if (currentStatus === "offline") {
 
             messageText =
                 "⚫ **The founder is away from their computer.**";
-
         }
 
+        // Send new message
         lastBotMessage = await channel.send({
             content: messageText,
             flags: MessageFlags.SuppressNotifications
@@ -331,21 +333,25 @@ else if (currentStatus === "offline") {
         lastPCStatus = newStatus;
     }
 
+    // Save state
     lastStatus = "offline";
     lastGameId = null;
 }
-
         // ==============================
         // SAVE CURRENT STATE
         // ==============================
 
   if (currentStatus !== "offline") {
+
     lastStatus = currentStatus;
 
     lastGameId =
         currentStatus === "town"
             ? gameId
             : null;
+
+    // Reset PC status when Roblox is being played
+    lastPCStatus = null;
 }
 
 
