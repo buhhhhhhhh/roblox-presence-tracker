@@ -21,6 +21,7 @@ const TOWN_PLACE_ID = "4991214437";
 const CHECK_INTERVAL = 10000; // 10 seconds
 
 let lastPCStatus = null;
+let lastBotMessage = null;
 
 function isPCOnline() {
     return Date.now() - lastPCHeartbeat < PC_OFFLINE_TIMEOUT;
